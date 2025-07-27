@@ -2,6 +2,7 @@ export const blindPeoplePath = {
 	"type": "FeatureCollection",
 	"features": [
 		{
+			"id": 1,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -36,6 +37,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 2,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -70,6 +72,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 3,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -104,6 +107,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 4,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -138,6 +142,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 5,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -172,6 +177,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 6,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -206,6 +212,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 7,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -240,6 +247,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 8,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -274,6 +282,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 9,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -308,6 +317,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 10,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -342,6 +352,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 11,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -376,6 +387,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 12,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -410,6 +422,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 13,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -444,6 +457,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 14,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -478,6 +492,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 15,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -512,6 +527,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 16,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -546,6 +562,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 17,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -580,6 +597,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 18,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -614,6 +632,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 19,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -648,6 +667,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 20,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -682,6 +702,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 21,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -716,6 +737,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 22,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -750,6 +772,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 23,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -784,6 +807,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 24,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -818,6 +842,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 25,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -852,6 +877,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 26,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -886,6 +912,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 27,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -920,6 +947,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 28,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -954,6 +982,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 29,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -988,6 +1017,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 30,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",
@@ -1022,6 +1052,7 @@ export const blindPeoplePath = {
 			}
 		},
 		{
+			"id": 31,
 			"type": "Feature",
 			"geometry": {
 				"type": "LineString",

@@ -2,6 +2,7 @@ export const nodes = {
 	"type": "FeatureCollection",
 	"features": [
 		{
+			"id": 1,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -21,6 +22,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 2,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -40,6 +42,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 3,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -59,6 +62,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 4,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -78,6 +82,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 5,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -97,6 +102,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 6,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -116,6 +122,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 7,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -135,6 +142,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 8,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -154,6 +162,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 9,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -173,6 +182,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 10,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -192,6 +202,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 11,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -211,6 +222,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 12,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -230,6 +242,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 13,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -249,6 +262,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 14,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -268,6 +282,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 15,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -287,6 +302,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 16,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -307,6 +323,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 17,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -327,6 +344,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 18,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -346,6 +364,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 19,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -365,6 +384,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 20,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -385,6 +405,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 21,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -405,6 +426,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 22,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -425,6 +447,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 23,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -445,6 +468,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 24,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -465,6 +489,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 25,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -485,6 +510,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 26,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -505,6 +531,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 27,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -525,6 +552,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 28,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -545,6 +573,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 29,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -565,6 +594,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 30,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -585,6 +615,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 31,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
@@ -604,6 +635,7 @@ export const nodes = {
 			}
 		},
 		{
+			"id": 32,
 			"type": "Feature",
 			"geometry": {
 				"type": "Point",
