@@ -35,8 +35,15 @@ const MapBoxContainer: React.FC = () => {
     const [lat] = useState(52.0070019);
     const [zoom, setZoom] = useState<number>(19);
 
-    const [startNode, setStartNode] = useState<String>("");
-    const [endNode, setEndNode] = useState<String>("");
+    const [startNode, setStartNode] = useState<string>("");
+    const [endNode, setEndNode] = useState<string>("");
+    const startNodeRef = useRef<string>("");
+    const endNodeRef = useRef<string>("");
+
+    const [startNodeId, setStartNodeId] = useState<number>(0);
+    const [endNodeId, setEndNodeId] = useState<number>(0);
+    const startNodeIdRef = useRef<number>(0);
+    const endNodeIdRef = useRef<number>(0);
 
     const OVERVIEW_DIFFERENCE = 4;
     const OVERVIEW_MIN_ZOOM = 5;
@@ -67,6 +74,17 @@ const MapBoxContainer: React.FC = () => {
         }
         /* eslint-disable-next-line react-hooks/exhaustive-deps */
     }, [mapStyle, miniMap]);
+
+    useEffect(() => {
+        console.log("StartNode useEffect:"+startNode);
+        console.log("EndNode useEffect"+endNode);
+        startNodeRef.current = startNode;
+        endNodeRef.current = endNode;
+
+        startNodeIdRef.current = startNodeId;
+        endNodeIdRef.current = endNodeId;
+        
+    }, [startNode, endNode]);
 
     const buildOverviewZoom = (zoomAmount: number) => {
         return Math.min(Math.max(zoomAmount - OVERVIEW_DIFFERENCE, OVERVIEW_MIN_ZOOM), OVERVIEW_MAX_ZOOM);
@@ -107,7 +125,8 @@ const MapBoxContainer: React.FC = () => {
             map.addSource('blind-people-network-delft', {
                 type: 'geojson',
                 // Use a URL for the value for the `data` property.
-                data: blindPeoplePath as FeatureCollection
+                data: blindPeoplePath as FeatureCollection,
+                generateId: true 
             });
 
             map.addLayer({
@@ -134,8 +153,15 @@ const MapBoxContainer: React.FC = () => {
                 'source': 'nodes-blind-people-network-delft',
                 'layout': {},
                 'paint': {
-                    'line-color': '#000',
-                    'line-width': 3
+                    'circle-radius': 6,
+                    'circle-color': [
+                        'case',
+                        ['boolean', ['feature-state', 'clicked'], false],
+                        '#007bff', // blue for clicked
+                        '#000000'  // default color
+                    ],
+                    'circle-stroke-color': '#fff',
+                    'circle-stroke-width': 1
                 }
             });
 
@@ -152,12 +178,12 @@ const MapBoxContainer: React.FC = () => {
 
                 // Copy the coordinates from the POI underneath the cursor
             
-                const id = e.feature?.properties?.id as string;
+                const idNode = e.feature?.properties?.id as string;
 
                 // Populate the popup and set its coordinates based on the feature found.
                 popup
                     .setLngLat(e.lngLat)
-                    .setHTML(id)
+                    .setHTML(`<span id=${idNode} >${idNode}</span>`)
                     .addTo(map);
                 }
             });
@@ -171,24 +197,30 @@ const MapBoxContainer: React.FC = () => {
                 }
             });
 
-            map.addInteraction('places-click-interaction', {
-                type: 'click',
-                target: { layerId: 'nodes' },
-                handler: (e) => {
-                    // Copy coordinates array.
-                    const id = e.feature?.properties?.id as string;
-                    console.log("Clicked");
-                    setEndNode(startNode)
-                    setStartNode(id);
+            map.on('click', 'nodes', (e) => {
+                const id = e.features?.[0]?.properties?.id as string;
+                const nodeId = e.features?.[0]?.id as number;
+                map?.setFeatureState(
+                    { source: 'nodes-blind-people-network-delft', id: endNodeIdRef.current },
+                    { clicked: false }
+                );
 
-                    console.log(startNode);
-                    console.log(endNode);
+                setEndNodeId(startNodeIdRef.current);
+                setStartNodeId(nodeId)
 
-                    if(startNode != "" && endNode != ""){
-                        console.log("Send request to get Route");
-                    }
-                }
+                setEndNode(startNodeRef.current);
+                setStartNode(id);
+
+                map.getCanvas().style.cursor = 'pointer';
+
                 
+                console.log(nodeId);
+                map.setFeatureState({
+                    source: 'nodes-blind-people-network-delft',
+                    id: nodeId,
+                }, {
+                    clicked: true
+                });
             });
 
             setMap(map);
@@ -204,70 +236,9 @@ const MapBoxContainer: React.FC = () => {
                     center: [mapCenter.lng, mapCenter.lat],
                     zoom: buildOverviewZoom(zoom),
                 });
-                // buildOverviewBounds(map, miniMap);
             }
         });
     };
-
-    // Put the over bounds on the mini box.
-    // const buildOverviewBounds = (map: mapboxgl.Map | null, miniMap: mapboxgl.Map) => {
-    //     if (miniMap && map) {
-    //         // REMOVE OLD BOUNDS
-    //         if (miniMap.getSource('parentOutline')) {
-    //             miniMap.removeLayer('parentOutlineOutline');
-    //             miniMap.removeLayer('parentOutlineFill');
-    //             miniMap.removeSource('parentOutline');
-    //         }
-
-    //         // GENERATE NEW BOUNDS
-    //         if (map.getZoom() > 5.25) {
-    //             const bounds = [];
-    //             const parentMapBounds = map.getBounds();
-    //             const ne = [parentMapBounds._ne.lng, parentMapBounds._ne.lat];
-    //             const se = [parentMapBounds._ne.lng, parentMapBounds._sw.lat];
-    //             const sw = [parentMapBounds._sw.lng, parentMapBounds._sw.lat];
-    //             const nw = [parentMapBounds._sw.lng, parentMapBounds._ne.lat];
-    //             bounds.push(ne, se, sw, nw, ne);
-    //             // CREATE GEONJSON FEATURES ON OVERVIEW MAP LINKED TO BOUND
-    //             miniMap.addSource('parentOutline', {
-    //                 type: 'geojson',
-    //                 data: {
-    //                     type: 'Feature',
-    //                     geometry: {
-    //                         type: 'Polygon',
-    //                         coordinates: [bounds],
-    //                     },
-    //                     properties: {},
-    //                 },
-    //             });
-
-    //             // ADD FILL TO POLYGON LAYER
-    //             miniMap.addLayer({
-    //                 id: 'parentOutlineFill',
-    //                 type: 'fill',
-    //                 source: 'parentOutline', // reference the data source
-    //                 layout: {},
-    //                 paint: {
-    //                     'fill-color': '#0080ff', // blue color fill
-    //                     'fill-opacity': 0.3,
-    //                 },
-    //             });
-
-    //             // ADD OUTLINE TO POLYGON LAYER
-    //             miniMap.addLayer({
-    //                 id: 'parentOutlineOutline',
-    //                 type: 'line',
-    //                 source: 'parentOutline',
-    //                 layout: {},
-    //                 paint: {
-    //                     'line-color': '#0080ff',
-    //                     'line-width': 1,
-    //                 },
-    //             });
-    //         }
-    //     }
-    // };
-
 
     const miniMapStyles: React.CSSProperties = {
         width: '20%',
@@ -281,14 +252,75 @@ const MapBoxContainer: React.FC = () => {
     };
     const mapStyles: React.CSSProperties = {
         width: '100%',
-        height: '100%',
+        height: '90%',
         position: 'absolute',
-        top: '0px',
+        top: '10%',
         zIndex: -1,
     };
 
+    const navigate = async ()  => {
+
+        const response = await fetch(`http://159.223.223.232:8081/graphVertex/edgesShortestPath/159/${startNode}/${endNode}`, {
+            method: "GET", // or "GET", "PUT", etc.
+            headers: {
+                "Content-Type": "application/geo+json",
+                'Accept': '*/*'
+            }
+        });
+        const data = await response.json();
+        if(map?.getSource('blind-people-route-delft') && map?.isSourceLoaded('blind-people-route-delft')){
+            map?.removeLayer('route')
+            map?.removeSource('blind-people-route-delft')
+        }
+                
+
+        map?.addSource('blind-people-route-delft', {
+                type: 'geojson',
+                // Use a URL for the value for the `data` property.
+                data: data as FeatureCollection,
+                generateId: true 
+            });
+
+        map?.addLayer({
+            'id': 'route',
+            'type': 'line',
+            'source': 'blind-people-route-delft',
+            'layout': {},
+            'paint': {
+                'line-color': '#F7455D',
+                'line-width': 3
+            }
+        });
+
+        map?.setFeatureState(
+            { source: 'nodes-blind-people-network-delft', id: endNodeId },
+            { clicked: false }
+        );
+
+        map?.setFeatureState(
+            { source: 'nodes-blind-people-network-delft', id: startNodeId },
+            { clicked: false }
+        );
+
+        startNodeIdRef.current=0;
+        endNodeIdRef.current = 0;
+        setEndNodeId(endNodeIdRef.current);
+        setStartNodeId(startNodeIdRef.current);
+
+        startNodeRef.current="";
+        endNodeRef.current = "";
+        setEndNode(endNodeRef.current);
+        setStartNode(startNodeRef.current);
+    }
+
     return (
         <>
+            {
+             endNode!=""?   <div><span>{`From Node Id: ${startNode}, To Node Id: ${endNode}`}</span></div>:<div></div>
+            }
+            {
+             endNode!=""? <div><button onClick={async ()=>await navigate()}>{`Navigate!`}</button></div>:<div></div>
+            }
             <div style={mapStyles} ref={(el) => {mapContainer.current = el}} />
             <div style={miniMapStyles} ref={(el) => {miniMapContainer.current = el}} />
         </>
