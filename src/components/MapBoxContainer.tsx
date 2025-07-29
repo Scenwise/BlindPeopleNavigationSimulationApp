@@ -1,12 +1,13 @@
 import mapboxgl from 'mapbox-gl';
 import React, { useEffect, useRef, useState } from 'react';
 import {blindPeoplePath} from '../resorces/edges';
-import { Feature, FeatureCollection } from "geojson";
+import { Feature, FeatureCollection, LineString, Position } from "geojson";
 import {nodes} from '../resorces/nodes';
+import image from '../resorces/triangle.png';
+import { calculateBearing } from '../functions/bearing';
+import { moveForwardAlongLine } from '../functions/moveForwardAlongLine';
 
 import { useAppSelector } from '../store';
-import { LngLatLike } from 'mapbox-gl';
-
 // The following is required to stop "npm build" from transpiling mapbox code.
 // notice the exclamation point in the import.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -45,6 +46,17 @@ const MapBoxContainer: React.FC = () => {
     const startNodeIdRef = useRef<number>(0);
     const endNodeIdRef = useRef<number>(0);
 
+    const [currentEdgeGeometry, setCurrentEdgeGeometry] = useState<[[number, number], [number, number]]>([[0,0], [0,0]])
+
+    const [triangleState, setTriangleState] = useState<{
+        coordinates: [number, number];
+        rotation: number;
+        }>({
+        coordinates: [0, 0],
+        rotation: 0
+    });
+    const triangleSourceId = 'triangle-marker';
+
     const OVERVIEW_DIFFERENCE = 4;
     const OVERVIEW_MIN_ZOOM = 5;
     const OVERVIEW_MAX_ZOOM = 10;
@@ -76,8 +88,6 @@ const MapBoxContainer: React.FC = () => {
     }, [mapStyle, miniMap]);
 
     useEffect(() => {
-        console.log("StartNode useEffect:"+startNode);
-        console.log("EndNode useEffect"+endNode);
         startNodeRef.current = startNode;
         endNodeRef.current = endNode;
 
@@ -183,7 +193,7 @@ const MapBoxContainer: React.FC = () => {
                 // Populate the popup and set its coordinates based on the feature found.
                 popup
                     .setLngLat(e.lngLat)
-                    .setHTML(`<span id=${idNode} >${idNode}</span>`)
+                    .setHTML(`<span id=${idNode} >${idNode}, ${e.lngLat}</span>`)
                     .addTo(map);
                 }
             });
@@ -213,8 +223,6 @@ const MapBoxContainer: React.FC = () => {
 
                 map.getCanvas().style.cursor = 'pointer';
 
-                
-                console.log(nodeId);
                 map.setFeatureState({
                     source: 'nodes-blind-people-network-delft',
                     id: nodeId,
@@ -272,6 +280,11 @@ const MapBoxContainer: React.FC = () => {
             map?.removeLayer('route')
             map?.removeSource('blind-people-route-delft')
         }
+
+        if(map?.getSource(triangleSourceId) && map?.isSourceLoaded(triangleSourceId)){
+            map?.removeLayer('triangle-layer')
+            map?.removeSource(triangleSourceId)
+        }
                 
 
         map?.addSource('blind-people-route-delft', {
@@ -302,6 +315,56 @@ const MapBoxContainer: React.FC = () => {
             { clicked: false }
         );
 
+        map?.loadImage(image, (error, loadedImage) => {
+            if (error || !loadedImage) {
+                console.error("Error loading triangle image:", error);
+                return;
+            }
+            if (!map.hasImage('custom-triangle')) {
+                map.addImage('custom-triangle', loadedImage);
+            }
+        });
+
+        const coordinates = nodes.features[startNodeId-1].geometry.coordinates;
+        const startingEdge = data.features.filter((feature: Feature<LineString>)=>
+            arePositionsEqual(feature.geometry.coordinates[0], coordinates) || arePositionsEqual(feature.geometry.coordinates[1], coordinates))
+        const [bearing, edgeCoordinates] = calculateBearing(startingEdge[0].geometry.coordinates[0] as [number, number], startingEdge[0].geometry.coordinates[1] as [number, number], coordinates as [number, number]);
+        setCurrentEdgeGeometry(edgeCoordinates);
+        map?.addSource(triangleSourceId, {
+            type: 'geojson',
+            data: {
+            type: 'FeatureCollection',
+            features: [
+                {
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: coordinates
+                },
+                properties: { rotation: bearing }
+                }
+            ]
+            }
+        });
+
+        map?.addLayer({
+            id: 'triangle-layer',
+            type: 'symbol',
+            source: triangleSourceId,
+            layout: {
+            'icon-image': 'custom-triangle',
+            'icon-size': 1.5,
+            'icon-rotate': ['get', 'rotation'],
+            'icon-allow-overlap': true
+            }
+        });
+
+        // Set triangle state AFTER layer is added
+        setTriangleState({
+            coordinates: coordinates as [number, number],
+            rotation: bearing
+        });
+
         startNodeIdRef.current=0;
         endNodeIdRef.current = 0;
         setEndNodeId(endNodeIdRef.current);
@@ -313,6 +376,59 @@ const MapBoxContainer: React.FC = () => {
         setStartNode(startNodeRef.current);
     }
 
+    function arePositionsEqual(p1: Position, p2: Position): boolean {
+        return p1[0] === p2[0] && p1[1] === p2[1];
+    }
+
+    const updateTrianglePosition = (lng: number, lat: number, rotation: number) => {
+        const source = map?.getSource(triangleSourceId) as mapboxgl.GeoJSONSource;
+        if (!source) return;
+
+        const updatedData: GeoJSON.FeatureCollection = {
+            type: 'FeatureCollection',
+            features: [
+            {
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: [lng, lat]
+                },
+                properties: {
+                    rotation
+                }
+            }
+            ]
+        };
+
+        source.setData(updatedData);
+    };
+
+    const moveTriangle = (direction: 'up' | 'down' | 'left' | 'right') => {
+        const [lng, lat] = triangleState.coordinates;
+        const step = 0.00001;
+
+        let newLng = lng;
+        let newLat = lat;
+        let rotation = triangleState.rotation;
+
+        
+
+        switch (direction) {
+            case 'up':
+            [newLng, newLat] = moveForwardAlongLine(triangleState.coordinates, currentEdgeGeometry[0], currentEdgeGeometry[1], step);
+            break;
+            case 'right':
+            rotation+=10;
+            break;
+            case 'left':
+            rotation-=10;
+            break;
+        }
+
+        setTriangleState({ coordinates: [newLng, newLat], rotation });
+        updateTrianglePosition(newLng, newLat, rotation);
+    };
+
     return (
         <>
             {
@@ -321,6 +437,13 @@ const MapBoxContainer: React.FC = () => {
             {
              endNode!=""? <div><button onClick={async ()=>await navigate()}>{`Navigate!`}</button></div>:<div></div>
             }
+            <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 999 }}>
+                <button onClick={() => moveTriangle('up')}>↑</button>
+                <div>
+                    <button onClick={() => moveTriangle('left')}>←</button>
+                    <button onClick={() => moveTriangle('right')}>→</button>
+                </div>
+            </div>
             <div style={mapStyles} ref={(el) => {mapContainer.current = el}} />
             <div style={miniMapStyles} ref={(el) => {miniMapContainer.current = el}} />
         </>
