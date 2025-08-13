@@ -1,7 +1,7 @@
 import { Feature, LineString } from "geojson";
 import { isPointOnLineString } from "./getOnEdgePosition"
 
-export const getNaVigationCommandBasedonTrianglePosition = (trianglePosition: number[], edge: [[number, number], [number, number]], nextEdge: Feature<LineString>|null):String => {
+export const getNaVigationCommandBasedonTrianglePosition = (trianglePosition: number[], edge: [[number, number], [number, number]], nextEdge: Feature<LineString>|null):string => {
     if(isPointOnLineString(edge, trianglePosition, 1e-5)){
         if(isPointOnTheEnd(trianglePosition, edge)){
 

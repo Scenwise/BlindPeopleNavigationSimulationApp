@@ -60,7 +60,7 @@ const MapBoxContainer: React.FC = () => {
     });
 
     const [navigationPath, setNavigationPath] = useState<FeatureCollection<LineString>>({} as FeatureCollection<LineString>)
-    const [navigationCommand, setNavigationCommand] = useState<String>("");
+    const [navigationCommand, setNavigationCommand] = useState<string>("");
     const [currEdgeIndex, setCurrEdgeIndex] = useState<number>(-1);
     const triangleSourceId = 'triangle-marker';
 
