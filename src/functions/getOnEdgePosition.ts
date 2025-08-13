@@ -11,14 +11,14 @@ export const getOnEdgePosition = (feature: Feature<LineString>[], position: numb
 }
 
 function arePositionsEqual(p1: Position, p2: Position): boolean {
-        return p1[0] === p2[0] && p1[1] === p2[1];
-    };
+        return p1[0] === p2[0] && p1[1] === p2[1]
+    }
 
 export const getOnEdgePosition2 = (feature: Feature<LineString>[], position: number[], tolerance = 1e-9): [Feature<LineString>|null, number] => {
   let index = 0;
     for (const line of feature) {
     if (isPointOnLineString(line.geometry.coordinates, position, tolerance)) {
-      return [line, index]; // Found match
+      return [line, index] // Found match
     }
     index+=1;
   }
