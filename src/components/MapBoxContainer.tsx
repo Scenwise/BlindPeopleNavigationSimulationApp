@@ -1,11 +1,11 @@
 import mapboxgl from 'mapbox-gl';
 import React, { useEffect, useRef, useState } from 'react';
 import {blindPeoplePath} from '../resorces/edges';
-import { Feature, FeatureCollection, LineString, Position } from "geojson";
+import { FeatureCollection, LineString } from "geojson";
 import {nodes} from '../resorces/nodes';
 import image from '../resorces/triangle.png';
 import { calculateBearing } from '../functions/bearing';
-import { moveForwardAlongLineByPositionBearingStep, moveForwardAlongLine } from '../functions/moveForwardAlongLine';
+import { moveForwardAlongLineByPositionBearingStep } from '../functions/moveForwardAlongLine';
 
 import { useAppSelector } from '../store';
 import { getOnEdgePosition, getOnEdgePosition2 } from '../functions/getOnEdgePosition';
@@ -101,7 +101,7 @@ const MapBoxContainer: React.FC = () => {
         startNodeIdRef.current = startNodeId;
         endNodeIdRef.current = endNodeId;
         
-    }, [startNode, endNode]);
+    }, [endNode, endNodeId, startNode, startNodeId]);
 
     const buildOverviewZoom = (zoomAmount: number) => {
         return Math.min(Math.max(zoomAmount - OVERVIEW_DIFFERENCE, OVERVIEW_MIN_ZOOM), OVERVIEW_MAX_ZOOM);
@@ -112,7 +112,7 @@ const MapBoxContainer: React.FC = () => {
      * load the geoJSON for the public transport segments.
      * @param param0 setMap and mapContainer
      */
-    //eslint-disable-next-line sonarjs/cognitive-complexity
+
     const initializeMap = ({ setMap, mapContainer }: MapAndContainer): void => {
         const map = new mapboxgl.Map({
             container: mapContainer.current as string | HTMLElement,
@@ -412,8 +412,7 @@ const MapBoxContainer: React.FC = () => {
 
     const moveTriangle = (direction: 'up' | 'down' | 'left' | 'right') => {
         const [lng, lat] = triangleState.coordinates;
-        const step = 0.00001;
-
+    
         let newLng = lng;
         let newLat = lat;
         let rotation = triangleState.rotation;

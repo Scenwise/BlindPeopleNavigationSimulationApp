@@ -16,7 +16,7 @@ export const orderEdgesOnSequence = (edges: Feature<LineString>[], startPoint: n
       throw new Error(`No connected edge found from point ${currentPoint}`);
     }
 
-    let nextEdge = remaining[idx];
+    const nextEdge = remaining[idx];
 
     // Reverse edge if not starting from currentPoint
     if (!pointsEqual(nextEdge.geometry.coordinates[0], currentPoint)) {

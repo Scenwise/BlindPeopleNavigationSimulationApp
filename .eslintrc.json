@@ -8,7 +8,6 @@
   "rules": {
     "@typescript-eslint/ban-ts-comment": "warn",
     "@typescript-eslint/no-var-requires": "warn",
-    "react-hooks/exhaustive-deps": "warn",
-    "sonarjs/cognitive-complexity": ["warn", 15, "error", 15]
+    "react-hooks/exhaustive-deps": "warn"
   }
 }
