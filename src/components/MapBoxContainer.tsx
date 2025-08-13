@@ -5,9 +5,12 @@ import { Feature, FeatureCollection, LineString, Position } from "geojson";
 import {nodes} from '../resorces/nodes';
 import image from '../resorces/triangle.png';
 import { calculateBearing } from '../functions/bearing';
-import { moveForwardAlongLine } from '../functions/moveForwardAlongLine';
+import { moveForwardAlongLineByPositionBearingStep, moveForwardAlongLine } from '../functions/moveForwardAlongLine';
 
 import { useAppSelector } from '../store';
+import { getOnEdgePosition, getOnEdgePosition2 } from '../functions/getOnEdgePosition';
+import { orderEdgesOnSequence } from '../functions/orderEdgesInSequence';
+import { getNaVigationCommandBasedonTrianglePosition } from '../functions/getNaVigationCommandBasedonTrianglePosition';
 // The following is required to stop "npm build" from transpiling mapbox code.
 // notice the exclamation point in the import.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -55,6 +58,10 @@ const MapBoxContainer: React.FC = () => {
         coordinates: [0, 0],
         rotation: 0
     });
+
+    const [navigationPath, setNavigationPath] = useState<FeatureCollection<LineString>>({} as FeatureCollection<LineString>)
+    const [navigationCommand, setNavigationCommand] = useState<String>("");
+    const [currEdgeIndex, setCurrEdgeIndex] = useState<number>(-1);
     const triangleSourceId = 'triangle-marker';
 
     const OVERVIEW_DIFFERENCE = 4;
@@ -285,6 +292,9 @@ const MapBoxContainer: React.FC = () => {
             map?.removeLayer('triangle-layer')
             map?.removeSource(triangleSourceId)
         }
+
+        const coordinates = nodes.features[startNodeId-1].geometry.coordinates;
+        data.features = orderEdgesOnSequence(data.features, coordinates);
                 
 
         map?.addSource('blind-people-route-delft', {
@@ -325,11 +335,12 @@ const MapBoxContainer: React.FC = () => {
             }
         });
 
-        const coordinates = nodes.features[startNodeId-1].geometry.coordinates;
-        const startingEdge = data.features.filter((feature: Feature<LineString>)=>
-            arePositionsEqual(feature.geometry.coordinates[0], coordinates) || arePositionsEqual(feature.geometry.coordinates[1], coordinates))
-        const [bearing, edgeCoordinates] = calculateBearing(startingEdge[0].geometry.coordinates[0] as [number, number], startingEdge[0].geometry.coordinates[1] as [number, number], coordinates as [number, number]);
+        setNavigationPath(data);
+        
+        const startingEdge = getOnEdgePosition(data.features, coordinates);
+        const [bearing, edgeCoordinates] = calculateBearing(startingEdge?.geometry.coordinates[0] as [number, number], startingEdge?.geometry.coordinates[1] as [number, number], coordinates as [number, number]);
         setCurrentEdgeGeometry(edgeCoordinates);
+        setCurrEdgeIndex(0);
         map?.addSource(triangleSourceId, {
             type: 'geojson',
             data: {
@@ -376,10 +387,6 @@ const MapBoxContainer: React.FC = () => {
         setStartNode(startNodeRef.current);
     }
 
-    function arePositionsEqual(p1: Position, p2: Position): boolean {
-        return p1[0] === p2[0] && p1[1] === p2[1];
-    }
-
     const updateTrianglePosition = (lng: number, lat: number, rotation: number) => {
         const source = map?.getSource(triangleSourceId) as mapboxgl.GeoJSONSource;
         if (!source) return;
@@ -411,11 +418,19 @@ const MapBoxContainer: React.FC = () => {
         let newLat = lat;
         let rotation = triangleState.rotation;
 
-        
-
+        let index = currEdgeIndex;
+        moveForwardAlongLineByPositionBearingStep(triangleState.coordinates, triangleState.rotation, 1);
         switch (direction) {
             case 'up':
-            [newLng, newLat] = moveForwardAlongLine(triangleState.coordinates, currentEdgeGeometry[0], currentEdgeGeometry[1], step);
+            [newLng, newLat] = moveForwardAlongLineByPositionBearingStep(triangleState.coordinates, triangleState.rotation, 1);
+            const [edgePosition, edgeIndex] = getOnEdgePosition2(navigationPath.features, [newLng, newLat])
+            if(edgePosition!=null){
+                const [bearing, edgeCoordinates] = calculateBearing(edgePosition?.geometry.coordinates[0] as [number, number], edgePosition?.geometry.coordinates[1] as [number, number], [newLng, newLat]);
+                setCurrentEdgeGeometry(edgeCoordinates)
+                rotation = bearing;
+                index = edgeIndex;
+                setCurrEdgeIndex(edgeIndex)
+            }
             break;
             case 'right':
             rotation+=10;
@@ -427,6 +442,13 @@ const MapBoxContainer: React.FC = () => {
 
         setTriangleState({ coordinates: [newLng, newLat], rotation });
         updateTrianglePosition(newLng, newLat, rotation);
+        if(index+1<navigationPath.features.length){
+            console.log(getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, currentEdgeGeometry, navigationPath.features[index+1]))
+            setNavigationCommand(getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, currentEdgeGeometry, navigationPath.features[index+1]));
+        }else {
+            console.log(getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, currentEdgeGeometry, navigationPath.features[index+1]))
+            setNavigationCommand(getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, currentEdgeGeometry, null));
+        }
     };
 
     return (
@@ -437,6 +459,7 @@ const MapBoxContainer: React.FC = () => {
             {
              endNode!=""? <div><button onClick={async ()=>await navigate()}>{`Navigate!`}</button></div>:<div></div>
             }
+            <div style={{alignContent: 'center'}}>{navigationCommand}</div>
             <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 999 }}>
                 <button onClick={() => moveTriangle('up')}>↑</button>
                 <div>
