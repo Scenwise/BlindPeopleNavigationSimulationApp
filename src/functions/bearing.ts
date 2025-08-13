@@ -1,6 +1,6 @@
 export const calculateBearing = (coord1: [number, number], coord2: [number, number], startCoord: [number, number]): [number, [[number, number], [number, number]]] => {
     if(coord2 == startCoord){
-        [coord1, coord2] = [coord2, coord1];
+        [coord1, coord2] = [coord2, coord1]
     }
     const toRadians = (deg: number) => deg * (Math.PI / 180);
     const toDegrees = (rad: number) => rad * (180 / Math.PI);
