@@ -452,20 +452,45 @@ const MapBoxContainer: React.FC = () => {
 
     return (
         <>
-            {
-             endNode!=""?   <div><span>{`From Node Id: ${startNode}, To Node Id: ${endNode}`}</span></div>:<div></div>
-            }
-            {
-             endNode!=""? <div><button onClick={async ()=>await navigate()}>{`Navigate!`}</button></div>:<div></div>
-            }
-            <div style={{alignContent: 'center'}}>{navigationCommand}</div>
-            <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 999 }}>
-                <button onClick={() => moveTriangle('up')}>↑</button>
-                <div>
-                    <button onClick={() => moveTriangle('left')}>←</button>
-                    <button onClick={() => moveTriangle('right')}>→</button>
+        <div style={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center",
+            width: "100%",
+            padding: "10px"
+        }}>
+            {/* Left side */}
+            <div>
+                {endNode !== "" ? (
+                    <div><span>{`From Node Id: ${startNode}, To Node Id: ${endNode}`}</span></div>
+                ) : <div></div>}
+                {endNode !== "" ? (
+                    <div><button onClick={async ()=>await navigate()}>{`Navigate!`}</button></div>
+                ) : <div></div>}
+                </div>
+
+                {/* Center */}
+                <div>{navigationCommand}</div>
+
+                {/* Right side */}
+                <div style={{ 
+                    display: "flex", 
+                    flexDirection: "column", 
+                    alignItems: "center", 
+                    marginRight: "5%" 
+                }}>
+                {/* Up button */}
+                    <button onClick={() => moveTriangle('up')}>↑</button>
+
+                    {/* Left + Right side by side */}
+                    <div style={{ marginTop: "5px" }}>
+                        <button onClick={() => moveTriangle('left')}>←</button>
+                        <button style={{ marginLeft: "5px" }} onClick={() => moveTriangle('right')}>→</button>
+                    </div>
                 </div>
             </div>
+
+            {/* Map sections below */}
             <div style={mapStyles} ref={(el) => {mapContainer.current = el}} />
             <div style={miniMapStyles} ref={(el) => {miniMapContainer.current = el}} />
         </>
