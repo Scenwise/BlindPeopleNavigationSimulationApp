@@ -40,6 +40,5 @@ export const moveForwardAlongLineByPositionBearingStep = (start: [number, number
   lng2 = ((lng2 + 540) % 360) - 180; // normalize
 
   const lat2 = toDeg(φ2);
-  console.log([lng2, lat2]);
   return [lng2, lat2];
 }
