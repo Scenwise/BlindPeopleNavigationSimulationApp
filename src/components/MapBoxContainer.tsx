@@ -4,6 +4,7 @@ import {blindPeoplePath} from '../resorces/edges';
 import { FeatureCollection, LineString } from "geojson";
 import {nodes} from '../resorces/nodes';
 import image from '../resorces/triangle.png';
+import d3Person from '../resorces/blueMan.glb';
 import { calculateBearing } from '../functions/bearing';
 import { moveForwardAlongLineByPositionBearingStep } from '../functions/moveForwardAlongLine';
 
@@ -11,6 +12,8 @@ import { useAppSelector } from '../store';
 import { getOnEdgePosition, getOnEdgePosition2 } from '../functions/getOnEdgePosition';
 import { orderEdgesOnSequence } from '../functions/orderEdgesInSequence';
 import { getNaVigationCommandBasedonTrianglePosition } from '../functions/getNaVigationCommandBasedonTrianglePosition';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 // The following is required to stop "npm build" from transpiling mapbox code.
 // notice the exclamation point in the import.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -68,6 +71,8 @@ const MapBoxContainer: React.FC = () => {
     const OVERVIEW_MIN_ZOOM = 5;
     const OVERVIEW_MAX_ZOOM = 10;
 
+    let personModel: THREE.Object3D;
+
     // const selectedRouteID = useAppSelector((state) => state.slice.selectedRoute);
 
 
@@ -119,6 +124,8 @@ const MapBoxContainer: React.FC = () => {
             style: 'mapbox://styles/mapbox/' + mapStyle,
             center: [lng, lat], //coordinates for Delft Station
             zoom: zoom,
+            pitch: 80,
+            bearing: -20,
         });
 
         const miniMap = new mapboxgl.Map({
@@ -126,7 +133,7 @@ const MapBoxContainer: React.FC = () => {
             style: 'mapbox://styles/mapbox/' + mapStyle,
             center: [lng, lat], //coordinates for Amsterdam
             zoom: buildOverviewZoom(zoom),
-            maxZoom: 10,
+            maxZoom: 15,
             interactive: false,
             attributionControl: false,
         });
@@ -181,6 +188,44 @@ const MapBoxContainer: React.FC = () => {
                     'circle-stroke-width': 1
                 }
             });
+
+            // 🔹 Add 3D building extrusions here
+            const layers = map.getStyle().layers;
+            let labelLayerId;
+            for (const layer of layers) {
+                if (layer.type === 'symbol' && layer.layout?.['text-field']) {
+                    labelLayerId = layer.id;
+                    break;
+                }
+            }
+
+
+            map.addLayer(
+                {
+                    id: '3d-buildings',
+                    source: 'composite',
+                    'source-layer': 'building',
+                    filter: ['==', 'extrude', 'true'],
+                    type: 'fill-extrusion',
+                    minzoom: 15,
+                    paint: {
+                        'fill-extrusion-color': '#aaa',
+                        'fill-extrusion-height': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        15,
+                        0,
+                        15.05,
+                        ['get', 'height']
+                        ],
+                        'fill-extrusion-base': ['get', 'min_height'],
+                        'fill-extrusion-opacity': 0.6
+                    }
+                },
+                labelLayerId
+            );
+
 
             const popup = new mapboxgl.Popup({
                 closeButton: false,
@@ -341,35 +386,91 @@ const MapBoxContainer: React.FC = () => {
         const [bearing, edgeCoordinates] = calculateBearing(startingEdge?.geometry.coordinates[0] as [number, number], startingEdge?.geometry.coordinates[1] as [number, number], coordinates as [number, number]);
         setCurrentEdgeGeometry(edgeCoordinates);
         setCurrEdgeIndex(0);
-        map?.addSource(triangleSourceId, {
-            type: 'geojson',
-            data: {
-            type: 'FeatureCollection',
-            features: [
-                {
-                type: 'Feature',
-                geometry: {
-                    type: 'Point',
-                    coordinates: coordinates
+        //From here
+        // map?.addSource(triangleSourceId, {
+        //     type: 'geojson',
+        //     data: {
+        //     type: 'FeatureCollection',
+        //     features: [
+        //         {
+        //         type: 'Feature',
+        //         geometry: {
+        //             type: 'Point',
+        //             coordinates: coordinates
+        //         },
+        //         properties: { rotation: bearing }
+        //         }
+        //     ]
+        //     }
+        // });
+
+        // map?.addLayer({
+        //     id: 'triangle-layer',
+        //     type: 'symbol',
+        //     source: triangleSourceId,
+        //     layout: {
+        //     'icon-image': 'custom-triangle',
+        //     'icon-size': 1.5,
+        //     'icon-rotate': ['get', 'rotation'],
+        //     'icon-allow-overlap': true
+        //     }
+        // });
+
+        const customLayer =  (map: mapboxgl.Map): mapboxgl.CustomLayerInterface => {
+            const camera = new THREE.Camera();
+            const scene = new THREE.Scene();
+            const loader = new GLTFLoader();
+
+            const renderer = new THREE.WebGLRenderer({
+                canvas: map.getCanvas(),
+                context: map.painter.context.gl,
+                antialias: true
+            });
+
+            renderer.autoClear = false;
+            loader.load(d3Person, (gltf) => {
+                personModel = gltf.scene;
+                personModel.scale.set(5, 5, 5); // Adjust size
+                personModel.rotation.y = Math.PI; // Adjust facing direction
+
+                // Create custom layer for Mapbox
+                
+
+                // Add layer above 3D buildings
+                const mercatorCoord = mapboxgl.MercatorCoordinate.fromLngLat([lng, lat], 0);
+                personModel.position.set(mercatorCoord.x, mercatorCoord.y, mercatorCoord.z);
+                personModel.rotation.y = bearing; // rotate with direction
+            });
+            return {
+                id: '3d-person',
+                type: 'custom',
+                renderingMode: '3d',
+                onAdd: function (map: mapboxgl.Map, gl: WebGLRenderingContext) {
+                    // this.camera = new THREE.Camera();
+                    // this.scene = new THREE.Scene();
+
+                    // Add lights
+                    const light = new THREE.DirectionalLight(0xffffff, 1);
+                    light.position.set(0, -70, 100).normalize();
+                    scene.add(light);
+
+                    scene.add(personModel);
+
+
+                    renderer.autoClear = false;
                 },
-                properties: { rotation: bearing }
+                render: function (gl: WebGLRenderingContext, matrix: number[]) {
+                    const m = new THREE.Matrix4().fromArray(matrix);
+                    camera.projectionMatrix = m;
+                    renderer.resetState();
+                    renderer.render(scene, camera);
                 }
-            ]
             }
-        });
+        };
 
-        map?.addLayer({
-            id: 'triangle-layer',
-            type: 'symbol',
-            source: triangleSourceId,
-            layout: {
-            'icon-image': 'custom-triangle',
-            'icon-size': 1.5,
-            'icon-rotate': ['get', 'rotation'],
-            'icon-allow-overlap': true
-            }
-        });
-
+        map?.addLayer(customLayer(map))
+        
+        //Until here
         // Set triangle state AFTER layer is added
         setTriangleState({
             coordinates: coordinates as [number, number],
