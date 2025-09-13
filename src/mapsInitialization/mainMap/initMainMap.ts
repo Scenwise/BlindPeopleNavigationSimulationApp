@@ -1,5 +1,4 @@
 import mapboxgl, { Map } from "mapbox-gl"
-import { RefObject } from "react"
 
 export const initMainMap = (lng: number, lat: number, mapStyle: string, zoom: number, mapContainer: React.MutableRefObject<HTMLDivElement | null>): Map => {
     return new mapboxgl.Map({
