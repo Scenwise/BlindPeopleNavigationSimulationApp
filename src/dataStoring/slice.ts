@@ -6,7 +6,7 @@ export interface State {
 }
 
 export const initialState: State = {
-    mapStyle: 'light-v11'
+    mapStyle: 'streets-v12'
 };
 
 const slice = createSlice({

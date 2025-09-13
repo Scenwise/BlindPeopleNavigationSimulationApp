@@ -5,12 +5,28 @@ import { FeatureCollection, LineString } from "geojson";
 import {nodes} from '../resorces/nodes';
 import image from '../resorces/triangle.png';
 import { calculateBearing } from '../functions/bearing';
-import { moveForwardAlongLineByPositionBearingStep } from '../functions/moveForwardAlongLine';
 
 import { useAppSelector } from '../store';
-import { getOnEdgePosition, getOnEdgePosition2 } from '../functions/getOnEdgePosition';
+import { getOnEdgePosition } from '../functions/getOnEdgePosition';
 import { orderEdgesOnSequence } from '../functions/orderEdgesInSequence';
 import { getNaVigationCommandBasedonTrianglePosition } from '../functions/getNaVigationCommandBasedonTrianglePosition';
+import * as THREE from 'three';
+import { mainMapOnLoad } from '../mapsInitialization/mainMap/mainMapOnLoad';
+import { miniMapStyles } from '../mapsInitialization/miniMap/miniMapStyles';
+import { mapStyles } from '../mapsInitialization/mainMap/mapStyles';
+import { initMainMap } from '../mapsInitialization/mainMap/initMainMap';
+import { initMiniMap } from '../mapsInitialization/miniMap/initMiniMap';
+import { clearMapSourceAndLayer } from '../mapsInitialization/mapClearence';
+import { blindPeopleRouteDelft } from '../mapsInitialization/mainMap/mainMapData/blindPeopleNetworkDelft';
+import { blindPeoplePathDelftLayer } from '../mapsInitialization/mainMap/mainMapData/blindPeoplePathDelftLayer';
+import { imageLoader } from '../functions/imageLoader';
+import { pointSource } from '../mapsInitialization/miniMap/pointSource';
+import { miniTriangleLayer } from '../mapsInitialization/miniMap/miniTriangleLayer';
+import { personShadowLayer } from '../mapsInitialization/mainMap/mainMapData/personShadowLayer';
+import { getShortestPath } from '../functions/restClient';
+import { add3DPersonLayer } from '../3dInitialization';
+import { updatePosition } from '../functions/positionUpdate';
+import { speakCommand } from '../functions/speakCommand';
 // The following is required to stop "npm build" from transpiling mapbox code.
 // notice the exclamation point in the import.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -63,10 +79,9 @@ const MapBoxContainer: React.FC = () => {
     const [navigationCommand, setNavigationCommand] = useState<string>("");
     const [currEdgeIndex, setCurrEdgeIndex] = useState<number>(-1);
     const triangleSourceId = 'triangle-marker';
+    const [followMode, setFollowMode] = useState(false);
 
-    const OVERVIEW_DIFFERENCE = 4;
-    const OVERVIEW_MIN_ZOOM = 5;
-    const OVERVIEW_MAX_ZOOM = 10;
+    const personModelRef = useRef<THREE.Object3D | null>(null);
 
     // const selectedRouteID = useAppSelector((state) => state.slice.selectedRoute);
 
@@ -77,7 +92,7 @@ const MapBoxContainer: React.FC = () => {
 
     useEffect((): void => {
         if (true) {
-            mapboxgl.accessToken = "pk.eyJ1IjoidHVkdGltMjEiLCJhIjoiY2tvYWQwczczMTJ6NTJwbXUydmVvbXFsZCJ9.ixIsrkMIvzJuWoGSMTKZmw";
+            mapboxgl.accessToken = "pk.eyJ1IjoicmFkb3NsYXZzMjAwMSIsImEiOiJjbWV3dDk5bzIwcnAwMmtxeDFudGRxZzBhIn0.GWQEvmGKfV2crLdj0BP_CQ";
         } else {
             throw new Error('Missing accesstoken for mapboxgl');
         }
@@ -103,10 +118,6 @@ const MapBoxContainer: React.FC = () => {
         
     }, [endNode, endNodeId, startNode, startNodeId]);
 
-    const buildOverviewZoom = (zoomAmount: number) => {
-        return Math.min(Math.max(zoomAmount - OVERVIEW_DIFFERENCE, OVERVIEW_MIN_ZOOM), OVERVIEW_MAX_ZOOM);
-    };
-
     /**
      * Initializaes the map with styles,
      * load the geoJSON for the public transport segments.
@@ -114,130 +125,16 @@ const MapBoxContainer: React.FC = () => {
      */
 
     const initializeMap = ({ setMap, mapContainer }: MapAndContainer): void => {
-        const map = new mapboxgl.Map({
-            container: mapContainer.current as string | HTMLElement,
-            style: 'mapbox://styles/mapbox/' + mapStyle,
-            center: [lng, lat], //coordinates for Delft Station
-            zoom: zoom,
-        });
-
-        const miniMap = new mapboxgl.Map({
-            container: miniMapContainer.current as string | HTMLElement,
-            style: 'mapbox://styles/mapbox/' + mapStyle,
-            center: [lng, lat], //coordinates for Amsterdam
-            zoom: buildOverviewZoom(zoom),
-            maxZoom: 10,
-            interactive: false,
-            attributionControl: false,
-        });
+        const map = initMainMap(lng, lat, mapStyle, zoom, mapContainer);
+        const miniMap = initMiniMap(lng, lat, mapStyle, zoom, miniMapContainer);
 
 
         miniMap.on('load', async () => {
             setMiniMap(miniMap);
-            // buildOverviewBounds(map, miniMap);
         });
 
         map.on('load', async () => {
-
-            map.addSource('blind-people-network-delft', {
-                type: 'geojson',
-                // Use a URL for the value for the `data` property.
-                data: blindPeoplePath as FeatureCollection,
-                generateId: true 
-            });
-
-            map.addLayer({
-                'id': 'network',
-                'type': 'line',
-                'source': 'blind-people-network-delft',
-                'layout': {},
-                'paint': {
-                    'line-color': '#000',
-                    'line-width': 3
-                }
-            });
-
-
-            map.addSource('nodes-blind-people-network-delft', {
-                type: 'geojson',
-                // Use a URL for the value for the `data` property.
-                data: nodes as FeatureCollection
-            });
-
-            map.addLayer({
-                'id': 'nodes',
-                'type': 'circle',
-                'source': 'nodes-blind-people-network-delft',
-                'layout': {},
-                'paint': {
-                    'circle-radius': 6,
-                    'circle-color': [
-                        'case',
-                        ['boolean', ['feature-state', 'clicked'], false],
-                        '#007bff', // blue for clicked
-                        '#000000'  // default color
-                    ],
-                    'circle-stroke-color': '#fff',
-                    'circle-stroke-width': 1
-                }
-            });
-
-            const popup = new mapboxgl.Popup({
-                closeButton: false,
-                closeOnClick: false
-            });
-
-            map.addInteraction('places-mouseenter-interaction', {
-                type: 'mouseenter',
-                target: { layerId: 'nodes' },
-                handler: (e) => {
-                map.getCanvas().style.cursor = 'pointer';
-
-                // Copy the coordinates from the POI underneath the cursor
-            
-                const idNode = e.feature?.properties?.id as string;
-
-                // Populate the popup and set its coordinates based on the feature found.
-                popup
-                    .setLngLat(e.lngLat)
-                    .setHTML(`<span id=${idNode} >${idNode}, ${e.lngLat}</span>`)
-                    .addTo(map);
-                }
-            });
-
-            map.addInteraction('places-mouseleave-interaction', {
-                type: 'mouseleave',
-                target: { layerId: 'nodes' },
-                handler: () => {
-                    map.getCanvas().style.cursor = '';
-                    popup.remove();
-                }
-            });
-
-            map.on('click', 'nodes', (e) => {
-                const id = e.features?.[0]?.properties?.id as string;
-                const nodeId = e.features?.[0]?.id as number;
-                map?.setFeatureState(
-                    { source: 'nodes-blind-people-network-delft', id: endNodeIdRef.current },
-                    { clicked: false }
-                );
-
-                setEndNodeId(startNodeIdRef.current);
-                setStartNodeId(nodeId)
-
-                setEndNode(startNodeRef.current);
-                setStartNode(id);
-
-                map.getCanvas().style.cursor = 'pointer';
-
-                map.setFeatureState({
-                    source: 'nodes-blind-people-network-delft',
-                    id: nodeId,
-                }, {
-                    clicked: true
-                });
-            });
-
+            mainMapOnLoad(map, blindPeoplePath as FeatureCollection, nodes as FeatureCollection, startNodeIdRef, startNodeRef, endNodeIdRef, setStartNode, setStartNodeId, setEndNode, setEndNodeId);
             setMap(map);
             map.resize();
         });
@@ -249,71 +146,32 @@ const MapBoxContainer: React.FC = () => {
             if (miniMap) {
                 miniMap.flyTo({
                     center: [mapCenter.lng, mapCenter.lat],
-                    zoom: buildOverviewZoom(zoom),
+                    zoom: miniMap.getZoom(),
                 });
             }
         });
     };
 
-    const miniMapStyles: React.CSSProperties = {
-        width: '20%',
-        height: '20%',
-        position: 'absolute',
-        border: 'solid blue',
-        bottom: `${0 + 5}px`, // Adjusted bottom property
-        right: '3px',
-        zIndex: 100,
-        display: zoom >= 10 ? 'flex' : 'none',
-    };
-    const mapStyles: React.CSSProperties = {
-        width: '100%',
-        height: '90%',
-        position: 'absolute',
-        top: '10%',
-        zIndex: -1,
-    };
+
 
     const navigate = async ()  => {
 
-        const response = await fetch(`http://159.223.223.232:8081/graphVertex/edgesShortestPath/159/${startNode}/${endNode}`, {
-            method: "GET", // or "GET", "PUT", etc.
-            headers: {
-                "Content-Type": "application/geo+json",
-                'Accept': '*/*'
-            }
-        });
-        const data = await response.json();
-        if(map?.getSource('blind-people-route-delft') && map?.isSourceLoaded('blind-people-route-delft')){
-            map?.removeLayer('route')
-            map?.removeSource('blind-people-route-delft')
-        }
+        const data = await getShortestPath(startNode, endNode);
+        clearMapSourceAndLayer('blind-people-route-delft', 'route', map);
+        clearMapSourceAndLayer(triangleSourceId, 'triangle-layer', map);
+        clearMapSourceAndLayer('mini-triangle', 'mini-triangle-layer', miniMap);
+        clearMapSourceAndLayer('person-shadow', 'person-shadow-layer', map);
 
-        if(map?.getSource(triangleSourceId) && map?.isSourceLoaded(triangleSourceId)){
-            map?.removeLayer('triangle-layer')
-            map?.removeSource(triangleSourceId)
-        }
 
         const coordinates = nodes.features[startNodeId-1].geometry.coordinates;
         data.features = orderEdgesOnSequence(data.features, coordinates);
                 
 
-        map?.addSource('blind-people-route-delft', {
-                type: 'geojson',
-                // Use a URL for the value for the `data` property.
-                data: data as FeatureCollection,
-                generateId: true 
-            });
+        map?.addSource('blind-people-route-delft', blindPeopleRouteDelft(data));
+        map?.addLayer(blindPeoplePathDelftLayer);
 
-        map?.addLayer({
-            'id': 'route',
-            'type': 'line',
-            'source': 'blind-people-route-delft',
-            'layout': {},
-            'paint': {
-                'line-color': '#F7455D',
-                'line-width': 3
-            }
-        });
+        miniMap?.addSource('blind-people-route-delft', blindPeopleRouteDelft(data));
+        miniMap?.addLayer(blindPeoplePathDelftLayer);
 
         map?.setFeatureState(
             { source: 'nodes-blind-people-network-delft', id: endNodeId },
@@ -325,15 +183,7 @@ const MapBoxContainer: React.FC = () => {
             { clicked: false }
         );
 
-        map?.loadImage(image, (error, loadedImage) => {
-            if (error || !loadedImage) {
-                console.error("Error loading triangle image:", error);
-                return;
-            }
-            if (!map.hasImage('custom-triangle')) {
-                map.addImage('custom-triangle', loadedImage);
-            }
-        });
+        map?.loadImage(image, (error, loadedImage) => imageLoader(error, loadedImage, 'custom-triangle', map));
 
         setNavigationPath(data);
         
@@ -341,36 +191,9 @@ const MapBoxContainer: React.FC = () => {
         const [bearing, edgeCoordinates] = calculateBearing(startingEdge?.geometry.coordinates[0] as [number, number], startingEdge?.geometry.coordinates[1] as [number, number], coordinates as [number, number]);
         setCurrentEdgeGeometry(edgeCoordinates);
         setCurrEdgeIndex(0);
-        map?.addSource(triangleSourceId, {
-            type: 'geojson',
-            data: {
-            type: 'FeatureCollection',
-            features: [
-                {
-                type: 'Feature',
-                geometry: {
-                    type: 'Point',
-                    coordinates: coordinates
-                },
-                properties: { rotation: bearing }
-                }
-            ]
-            }
-        });
 
-        map?.addLayer({
-            id: 'triangle-layer',
-            type: 'symbol',
-            source: triangleSourceId,
-            layout: {
-            'icon-image': 'custom-triangle',
-            'icon-size': 1.5,
-            'icon-rotate': ['get', 'rotation'],
-            'icon-allow-overlap': true
-            }
-        });
-
-        // Set triangle state AFTER layer is added
+        await initPersonLayer(coordinates as [number, number], bearing)
+        
         setTriangleState({
             coordinates: coordinates as [number, number],
             rotation: bearing
@@ -385,68 +208,69 @@ const MapBoxContainer: React.FC = () => {
         endNodeRef.current = "";
         setEndNode(endNodeRef.current);
         setStartNode(startNodeRef.current);
+
+        miniMap?.addSource('mini-triangle', pointSource(data));
+        miniMap?.loadImage(image, (error, loadedImage) => imageLoader(error, loadedImage, 'mini-triangle-icon', miniMap));
+        miniMap?.addLayer(miniTriangleLayer(bearing));
+
+        map?.addSource('person-shadow', pointSource(coordinates as [number, number]));
+        map?.addLayer(personShadowLayer, "3d-person");
     }
 
-    const updateTrianglePosition = (lng: number, lat: number, rotation: number) => {
-        const source = map?.getSource(triangleSourceId) as mapboxgl.GeoJSONSource;
-        if (!source) return;
+    const initPersonLayer = async (coordinates: [number, number], bearing: number) => {
+            if(map!=null && coordinates.at(0) != undefined ){
+            await addPersonLayer(map, coordinates.at(0) as number, coordinates.at(1) as number, bearing);
+            setFollowMode(true); // 👈 enable follow mode
+            followPerson(coordinates.at(0) as number, coordinates.at(1) as number, bearing);
+        }
+    }
 
-        const updatedData: GeoJSON.FeatureCollection = {
-            type: 'FeatureCollection',
-            features: [
-            {
-                type: 'Feature',
-                geometry: {
-                    type: 'Point',
-                    coordinates: [lng, lat]
-                },
-                properties: {
-                    rotation
-                }
-            }
-            ]
-        };
-
-        source.setData(updatedData);
+    const addPersonLayer = async (map: mapboxgl.Map, lng: number, lat: number, bearing: number) => {
+        personModelRef.current = await add3DPersonLayer(map, lng, lat, bearing);
     };
 
-    const moveTriangle = (direction: 'up' | 'down' | 'left' | 'right') => {
-        const [lng, lat] = triangleState.coordinates;
-    
-        let newLng = lng;
-        let newLat = lat;
-        let rotation = triangleState.rotation;
+    const updatePositions = (lng: number, lat: number, bearing: number) => {
+        updatePosition.person3DPosition(lng, lat, bearing, personModelRef);
+        updatePosition.miniMapTriangle(miniMap, lng, lat, bearing);
+        updatePosition.shadow3DPerson(map, lng, lat)
+        map?.triggerRepaint();
+    };
 
-        let index = currEdgeIndex;
-        moveForwardAlongLineByPositionBearingStep(triangleState.coordinates, triangleState.rotation, 1);
-        switch (direction) {
-            case 'up':
-            [newLng, newLat] = moveForwardAlongLineByPositionBearingStep(triangleState.coordinates, triangleState.rotation, 1);
-            const [edgePosition, edgeIndex] = getOnEdgePosition2(navigationPath.features, [newLng, newLat])
-            if(edgePosition!=null){
-                const [bearing, edgeCoordinates] = calculateBearing(edgePosition?.geometry.coordinates[0] as [number, number], edgePosition?.geometry.coordinates[1] as [number, number], [newLng, newLat]);
-                setCurrentEdgeGeometry(edgeCoordinates)
-                rotation = bearing;
-                index = edgeIndex;
-                setCurrEdgeIndex(edgeIndex)
-            }
-            break;
-            case 'right':
-            rotation+=10;
-            break;
-            case 'left':
-            rotation-=10;
-            break;
-        }
+    const followPerson = (lng: number, lat: number, bearing: number) => {
+        if (!map || !followMode) return;
 
+        map.easeTo({
+            center: [lng, lat],
+            zoom: 30,          // closer view
+            bearing: bearing,  // rotate with the person
+            pitch: 75,         // tilt for 3D
+            duration: 500,     // smooth transition
+            essential: true
+        });
+    };
+
+    const nextPositionOfMovement = (direction: 'up' | 'down' | 'left' | 'right') => {
+        const [newLng, newLat, rotation, edgeIndex, edgeCoordinates] = updatePosition.nextPosition(triangleState, direction, currEdgeIndex, navigationPath, currentEdgeGeometry);
+        setCurrEdgeIndex(edgeIndex)
+        setCurrentEdgeGeometry(edgeCoordinates)
         setTriangleState({ coordinates: [newLng, newLat], rotation });
-        updateTrianglePosition(newLng, newLat, rotation);
-        if(index+1<navigationPath.features.length){
-            console.log(getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, currentEdgeGeometry, navigationPath.features[index+1]))
-            setNavigationCommand(getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, currentEdgeGeometry, navigationPath.features[index+1]));
+        updatePositions(newLng, newLat, rotation);
+        followPerson(newLng, newLat, rotation);
+        navigationPath.features[edgeIndex].geometry.coordinates = edgeCoordinates
+        let newNavigationCommand:string;
+        if(edgeIndex+1<navigationPath.features.length){
+            newNavigationCommand = getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, navigationPath.features[edgeIndex], navigationPath.features[edgeIndex+1]);
+            if(newNavigationCommand != navigationCommand){
+                speakCommand(newNavigationCommand);
+            }
+            setNavigationCommand(newNavigationCommand);
+            
         }else {
-            console.log(getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, currentEdgeGeometry, navigationPath.features[index+1]))
-            setNavigationCommand(getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, currentEdgeGeometry, null));
+            newNavigationCommand = getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, navigationPath.features[edgeIndex], null);
+            if(newNavigationCommand != navigationCommand){
+                speakCommand(newNavigationCommand);
+            }
+            setNavigationCommand(newNavigationCommand);
         }
     };
 
@@ -480,12 +304,12 @@ const MapBoxContainer: React.FC = () => {
                     marginRight: "5%" 
                 }}>
                 {/* Up button */}
-                    <button onClick={() => moveTriangle('up')}>↑</button>
+                    <button onClick={() => nextPositionOfMovement('up')}>↑</button>
 
                     {/* Left + Right side by side */}
                     <div style={{ marginTop: "5px" }}>
-                        <button onClick={() => moveTriangle('left')}>←</button>
-                        <button style={{ marginLeft: "5px" }} onClick={() => moveTriangle('right')}>→</button>
+                        <button onClick={() => nextPositionOfMovement('left')}>←</button>
+                        <button style={{ marginLeft: "5px" }} onClick={() => nextPositionOfMovement('right')}>→</button>
                     </div>
                 </div>
             </div>
