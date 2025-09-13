@@ -77,8 +77,7 @@ export const custom3DLayerInterface = (map: Map, scene: THREE.Scene, camera: THR
 export const add3DPersonLayer = async (
     map: mapboxgl.Map,
     lng: number,
-    lat: number,
-    bearing: number
+    lat: number
 ): Promise<THREE.Object3D> => {
     return new Promise((resolve, reject) => {
         const camera = new THREE.Camera();

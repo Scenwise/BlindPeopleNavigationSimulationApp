@@ -219,14 +219,14 @@ const MapBoxContainer: React.FC = () => {
 
     const initPersonLayer = async (coordinates: [number, number], bearing: number) => {
             if(map!=null && coordinates.at(0) != undefined ){
-            await addPersonLayer(map, coordinates.at(0) as number, coordinates.at(1) as number, bearing);
+            await addPersonLayer(map, coordinates.at(0) as number, coordinates.at(1) as number);
             setFollowMode(true); // 👈 enable follow mode
             followPerson(coordinates.at(0) as number, coordinates.at(1) as number, bearing);
         }
     }
 
-    const addPersonLayer = async (map: mapboxgl.Map, lng: number, lat: number, bearing: number) => {
-        personModelRef.current = await add3DPersonLayer(map, lng, lat, bearing);
+    const addPersonLayer = async (map: mapboxgl.Map, lng: number, lat: number) => {
+        personModelRef.current = await add3DPersonLayer(map, lng, lat);
     };
 
     const updatePositions = (lng: number, lat: number, bearing: number) => {
