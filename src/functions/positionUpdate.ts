@@ -9,9 +9,9 @@ export const updatePosition = {
     person3DPosition: (lng: number, lat: number, bearing: number, personModelRef: React.RefObject<Object3D<Object3DEventMap> | null>) => {
         if (!personModelRef.current) return;
         moveForwardAlongLineByPositionBearingStep([lng, lat], bearing, 1)
-        const mercatorCoord = mapboxgl.MercatorCoordinate.fromLngLat(moveForwardAlongLineByPositionBearingStep([lng, lat], bearing, 6), 0);
+        const mercatorCoord = mapboxgl.MercatorCoordinate.fromLngLat(moveForwardAlongLineByPositionBearingStep([lng, lat], bearing, 5), 0);
         personModelRef.current.position.set(mercatorCoord.x, mercatorCoord.y, mercatorCoord.z);
-        personModelRef.current.rotation.y = bearing;
+        // personModelRef.current.rotation.y = bearing;
     },
     miniMapTriangle: (map: Map|null, lng: number, lat: number, bearing: number) => {
         if (map?.getSource('mini-triangle')) {

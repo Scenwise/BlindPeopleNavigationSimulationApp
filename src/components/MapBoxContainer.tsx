@@ -26,6 +26,7 @@ import { personShadowLayer } from '../mapsInitialization/mainMap/mainMapData/per
 import { getShortestPath } from '../functions/restClient';
 import { add3DPersonLayer } from '../3dInitialization';
 import { updatePosition } from '../functions/positionUpdate';
+import { speakCommand } from '../functions/speakCommand';
 // The following is required to stop "npm build" from transpiling mapbox code.
 // notice the exclamation point in the import.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -159,7 +160,7 @@ const MapBoxContainer: React.FC = () => {
         clearMapSourceAndLayer('blind-people-route-delft', 'route', map);
         clearMapSourceAndLayer(triangleSourceId, 'triangle-layer', map);
         clearMapSourceAndLayer('mini-triangle', 'mini-triangle-layer', miniMap);
-        clearMapSourceAndLayer('person-shadow', 'person-shadow-layer', miniMap);
+        clearMapSourceAndLayer('person-shadow', 'person-shadow-layer', map);
 
 
         const coordinates = nodes.features[startNodeId-1].geometry.coordinates;
@@ -255,10 +256,21 @@ const MapBoxContainer: React.FC = () => {
         setTriangleState({ coordinates: [newLng, newLat], rotation });
         updatePositions(newLng, newLat, rotation);
         followPerson(newLng, newLat, rotation);
+        navigationPath.features[edgeIndex].geometry.coordinates = edgeCoordinates
+        let newNavigationCommand:string;
         if(edgeIndex+1<navigationPath.features.length){
-            setNavigationCommand(getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, currentEdgeGeometry, navigationPath.features[edgeIndex+1]));
+            newNavigationCommand = getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, navigationPath.features[edgeIndex], navigationPath.features[edgeIndex+1]);
+            if(newNavigationCommand != navigationCommand){
+                speakCommand(newNavigationCommand);
+            }
+            setNavigationCommand(newNavigationCommand);
+            
         }else {
-            setNavigationCommand(getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, currentEdgeGeometry, null));
+            newNavigationCommand = getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, navigationPath.features[edgeIndex], null);
+            if(newNavigationCommand != navigationCommand){
+                speakCommand(newNavigationCommand);
+            }
+            setNavigationCommand(newNavigationCommand);
         }
     };
 

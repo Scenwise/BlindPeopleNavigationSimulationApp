@@ -1,26 +1,42 @@
 import { CustomLayerInterface, Map, MercatorCoordinate } from "mapbox-gl";
 import * as THREE from 'three';
-import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
-export const createPersonModel = (gltf: GLTF, lng: number, lat: number, bearing: number): THREE.Object3D => {
+export const createPersonModel = (
+    texture: THREE.Texture,
+    lng: number,
+    lat: number
+): THREE.Object3D => {
     const mercatorCoord = MercatorCoordinate.fromLngLat([lng, lat], 0);
     const scale = mercatorCoord.meterInMercatorCoordinateUnits();
-    const personModel: THREE.Object3D = gltf.scene;
-    const box = new THREE.Box3().setFromObject(personModel);
-    const size = new THREE.Vector3();
-    box.getSize(size); // size.y = height in model units
 
-    const desiredHeight = 3; // meters
-    const scaleFactor = (scale * desiredHeight) / size.y;
-    console.log(scaleFactor)
-    personModel.scale.set(scaleFactor, scaleFactor, scaleFactor);
+    const personHeight = 3; // meters
+    const personWidth = 1.2; // meters
+
+    const geometry = new THREE.PlaneGeometry(
+        personWidth * scale,
+        personHeight * scale
+    );
+
+    const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide,
+    });
+
+    const personModel = new THREE.Mesh(geometry, material);
+
+    // Position so feet are on the ground
+    personModel.position.set(
+        mercatorCoord.x,
+        mercatorCoord.y,
+        mercatorCoord.z + (personHeight * scale) / 2
+    );
+
+    // ✅ Stand it upright (green plane was correct)
     personModel.rotation.x = Math.PI / 2;
-    personModel.rotation.y = Math.PI;
-    personModel.position.set(mercatorCoord.x, mercatorCoord.y, mercatorCoord.z);
-    personModel.rotation.y = bearing;
-    
-    return personModel
-}
+
+    return personModel;
+};
 
 export const addLight = (): THREE.DirectionalLight => {
     const light = new THREE.DirectionalLight(0xffffff, 1);
@@ -28,7 +44,7 @@ export const addLight = (): THREE.DirectionalLight => {
     return light;
 }
 
-export const custom3DLayerInterface = (map: Map, scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer): CustomLayerInterface => {
+export const custom3DLayerInterface = (map: Map, scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer, personModel: THREE.Object3D): CustomLayerInterface => {
     return {
         id: "3d-person",
         type: "custom",
@@ -44,6 +60,12 @@ export const custom3DLayerInterface = (map: Map, scene: THREE.Scene, camera: THR
         render: function (_gl: WebGLRenderingContext, matrix: number[]) {
             const m = new THREE.Matrix4().fromArray(matrix);
             camera.projectionMatrix = m;
+
+            if (personModel) {
+                personModel.up.set(0, 0, 1);
+                personModel.lookAt(camera.position);
+            }
+
             renderer.resetState();
             renderer.render(scene, camera);
             // tell mapbox the layer has been updated
@@ -63,31 +85,64 @@ export const add3DPersonLayer = async (
         const scene = new THREE.Scene();
         const renderer = new THREE.WebGLRenderer({
             canvas: map.getCanvas(),
-            context: map.painter.context.gl,
+            context: (map).painter.context.gl,
             antialias: true,
         });
         renderer.autoClear = false;
 
-        const loader = new GLTFLoader();
+        const loader = new THREE.TextureLoader();
         loader.load(
-            "https://my-3d-person-model.netlify.app/some_random_shape.glb",
-            (gltf) => {
-                const personModel = createPersonModel(gltf, lng, lat, bearing);
+            "https://my-3d-person-model.netlify.app/transparent_man.png",
+            (texture) => {
+                const personModel = createPersonModel(texture, lng, lat);
 
-                // Add light + model to scene
+                // Add light + model
                 scene.add(addLight());
                 scene.add(personModel);
 
-                // Add custom 3D layer to Mapbox
+                // Attach custom layer
                 map.addLayer(
-                    custom3DLayerInterface(map, scene, camera, renderer),
+                    custom3DLayerInterface(map, scene, camera, renderer, personModel),
                     "3d-buildings"
                 );
-
-                resolve(personModel); // ✅ model ready
+                resolve(personModel);
             },
             undefined,
-            (error) => reject(error) // handle load error
+            (error) => reject(error)
         );
     });
+};
+
+export const addAxisPlanes = (
+  scene: THREE.Scene,
+  mercatorCoord: mapboxgl.MercatorCoordinate,
+  scale: number
+) => {
+  const size = 3 * scale;
+
+  // Red = XY plane (default THREE.PlaneGeometry)
+  const xy = new THREE.Mesh(
+    new THREE.PlaneGeometry(size, size),
+    new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide, transparent: true, opacity: 0.5 })
+  );
+  xy.position.set(mercatorCoord.x, mercatorCoord.y, mercatorCoord.z + size / 2);
+  scene.add(xy);
+
+  // Green = XZ plane (rotated upright)
+  const xz = new THREE.Mesh(
+    new THREE.PlaneGeometry(size, size),
+    new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide, transparent: true, opacity: 0.5 })
+  );
+  xz.rotation.x = Math.PI / 2;
+  xz.position.set(mercatorCoord.x + 2 * scale, mercatorCoord.y, mercatorCoord.z + size / 2);
+  scene.add(xz);
+
+  // Blue = YZ plane (rotated upright other way)
+  const yz = new THREE.Mesh(
+    new THREE.PlaneGeometry(size, size),
+    new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 })
+  );
+  yz.rotation.y = Math.PI / 2;
+  yz.position.set(mercatorCoord.x - 2 * scale, mercatorCoord.y, mercatorCoord.z + size / 2);
+  scene.add(yz);
 };
