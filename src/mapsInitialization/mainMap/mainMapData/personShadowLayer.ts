@@ -5,9 +5,9 @@ export const personShadowLayer: Layer = {
     type: 'circle',
     source: 'person-shadow',
     paint: {
-        "circle-radius": 50,          // size of shadow (in pixels)
+        "circle-radius": 20,          // size of shadow (in pixels)
         "circle-color": "black",
-        "circle-opacity": 0.3,        // transparency
+        "circle-opacity": 0.8,        // transparency
         "circle-blur": 0.6            // soft edges
     }
 }
