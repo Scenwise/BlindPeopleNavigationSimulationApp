@@ -258,20 +258,23 @@ const MapBoxContainer: React.FC = () => {
         followPerson(newLng, newLat, rotation);
         navigationPath.features[edgeIndex].geometry.coordinates = edgeCoordinates
         let newNavigationCommand:string;
-        if(edgeIndex+1<navigationPath.features.length){
-            newNavigationCommand = getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, navigationPath.features[edgeIndex], navigationPath.features[edgeIndex+1]);
+        if(direction === 'up'){
+            if(edgeIndex+1<navigationPath.features.length){
+            newNavigationCommand = getNaVigationCommandBasedonTrianglePosition(rotation, triangleState.coordinates, navigationPath.features[edgeIndex], navigationPath.features[edgeIndex+1]);
             if(newNavigationCommand != navigationCommand){
                 speakCommand(newNavigationCommand);
             }
             setNavigationCommand(newNavigationCommand);
             
-        }else {
-            newNavigationCommand = getNaVigationCommandBasedonTrianglePosition(triangleState.coordinates, navigationPath.features[edgeIndex], null);
-            if(newNavigationCommand != navigationCommand){
-                speakCommand(newNavigationCommand);
+            }else {
+                newNavigationCommand = getNaVigationCommandBasedonTrianglePosition(rotation, triangleState.coordinates, navigationPath.features[edgeIndex], null);
+                if(newNavigationCommand != navigationCommand){
+                    speakCommand(newNavigationCommand);
+                }
+                setNavigationCommand(newNavigationCommand);
             }
-            setNavigationCommand(newNavigationCommand);
         }
+        
     };
 
     return (

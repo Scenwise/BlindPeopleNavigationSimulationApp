@@ -68,7 +68,7 @@ export const updatePosition = {
         moveForwardAlongLineByPositionBearingStep(triangleState.coordinates, triangleState.rotation, 1);
         switch (direction) {
             case 'up':
-            [newLng, newLat] = moveForwardAlongLineByPositionBearingStep(triangleState.coordinates, triangleState.rotation, 1);
+            [newLng, newLat] = moveForwardAlongLineByPositionBearingStep(triangleState.coordinates, triangleState.rotation, 3/4);
             const [edgePosition, edgeIndex] = getOnEdgePosition2(navigationPath.features, [newLng, newLat])
             if(edgePosition!=null){
                 const [bearing, edgeCoordinatesNew] = calculateBearing(edgePosition?.geometry.coordinates[0] as [number, number], edgePosition?.geometry.coordinates[1] as [number, number], [newLng, newLat]);

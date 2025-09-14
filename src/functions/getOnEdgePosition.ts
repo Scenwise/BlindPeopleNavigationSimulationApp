@@ -59,6 +59,41 @@ function isPointOnSegment(a: Position, b: Position, p: Position, tolerance: numb
   const dxp = x - x1;
   const dyp = y - y1;
   const cross = dx * dyp - dy * dxp;
-
+  
   return Math.abs(cross) <= tolerance;
+}
+
+function deg2rad(deg: number): number {
+    return deg * (Math.PI / 180);
+}
+
+// Convert lat/lon differences to meters using equirectangular approximation
+function latLonToXY(lat: number, lon: number, lat0: number): {x: number, y: number} {
+    const R = 6371000; // Earth radius in meters
+    const x = deg2rad(lon) * R * Math.cos(deg2rad(lat0));
+    const y = deg2rad(lat) * R;
+    return { x, y };
+}
+
+// Calculate distance from point P to segment AB
+export function distancePointToEdge(P: [number, number], A: [number, number], B: [number, number]): number {
+    // Use A.lat as reference for projection
+    const lat0 = A[0];
+
+    const pXY = latLonToXY(P[0], P[1], lat0);
+    const aXY = latLonToXY(A[0], A[1], lat0);
+    const bXY = latLonToXY(B[0], B[1], lat0);
+
+    const dx = bXY.x - aXY.x;
+    const dy = bXY.y - aXY.y;
+
+    const t = ((pXY.x - aXY.x) * dx + (pXY.y - aXY.y) * dy) / (dx*dx + dy*dy);
+
+    let closest: {x: number, y: number};
+    if (t < 0) closest = aXY;
+    else if (t > 1) closest = bXY;
+    else closest = { x: aXY.x + t*dx, y: aXY.y + t*dy };
+
+    const dist = Math.sqrt((pXY.x - closest.x)**2 + (pXY.y - closest.y)**2);
+    return dist; // meters
 }

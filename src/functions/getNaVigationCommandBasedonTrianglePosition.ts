@@ -1,7 +1,9 @@
 import { Feature, LineString } from "geojson";
-import { isPointOnLineString } from "./getOnEdgePosition"
+import { distancePointToEdge } from "./getOnEdgePosition"
+import { distanceAlongHeadingToEdgeLonLat } from "./distanceToEdgeBasedOnBearing";
+import { turnToEdge } from "./turnInfoData";
 
-export const getNaVigationCommandBasedonTrianglePosition = (trianglePosition: number[], current: Feature<LineString>, nextEdge: Feature<LineString>|null):string => {
+export const getNaVigationCommandBasedonTrianglePosition = (bearing: number, trianglePosition: number[], current: Feature<LineString>, nextEdge: Feature<LineString>|null):string => {
     
     let roadTypeMessage = "";
     if(current.properties?.imaginery_content != nextEdge?.properties?.imaginery_content){
@@ -12,7 +14,7 @@ export const getNaVigationCommandBasedonTrianglePosition = (trianglePosition: nu
         }
     }
 
-    if(isPointOnLineString(current.geometry.coordinates, trianglePosition, 1e-5)){
+    if(distancePointToEdge(trianglePosition as [number, number], current.geometry.coordinates[0] as [number, number], current.geometry.coordinates[1] as [number, number])<2){
         if(isPointOnTheEnd(trianglePosition, current.geometry.coordinates as [[number, number], [number, number]])){
 
             if(nextEdge == null){
@@ -47,7 +49,21 @@ export const getNaVigationCommandBasedonTrianglePosition = (trianglePosition: nu
         
         return "Go forward";
     }
-    return "Make U-turn and get back on the path";
+    
+    const result = distanceAlongHeadingToEdgeLonLat(
+        trianglePosition as [number, number], 
+        (bearing + 180) % 360, 
+        current.geometry.coordinates[0] as [number, number], 
+        current.geometry.coordinates[1] as [number, number]);
+
+    const turn = turnToEdge(
+        (bearing + 180) % 360, 
+        current.geometry.coordinates[0] as [number, number], 
+        current.geometry.coordinates[1] as [number, number])
+    if(result){
+        return "Make U-turn and get back on the path, walk back "+Math.round(result?.distance*10) + " meters and then turn by "+turn.absTurn+" degrees to the "+turn.direction;
+    }
+    return "";
 
 }
 
@@ -96,6 +112,4 @@ const isPointOnTheEnd = (trianglePosition: number[], edge: [[number, number], [n
     }
     return false;
 }
-
-
 
